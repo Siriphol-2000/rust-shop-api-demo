@@ -3,6 +3,9 @@ use sea_orm::{Database, DatabaseConnection};
 use dotenvy::dotenv;
 use std::env;
 
+pub mod entities;
+use entities::{prelude::*, *};
+
 mod db;  // Module for database connection
 mod models;  // Module for SeaORM models
 
