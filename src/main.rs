@@ -6,8 +6,14 @@ use std::env;
 pub mod entities;
 use entities::{prelude::*, *};
 
+
+mod routes;
+use routes::user_routes::register;
+
+
 mod db;  // Module for database connection
 mod models;  // Module for SeaORM models
+mod services;
 
 // Default route handler function
 async fn default_route() -> impl Responder {
@@ -32,6 +38,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         App::new()
             .app_data(web::Data::new(db.clone()))  // Pass the DB connection to Actix
             .route("/", web::get().to(default_route)) // Default route handler
+            .service(register) // Add your register route to the app
     })
     .bind("127.0.0.1:8080")?  // Bind server to address
     .run()
