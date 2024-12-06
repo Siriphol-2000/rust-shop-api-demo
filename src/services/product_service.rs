@@ -1,10 +1,10 @@
 use crate::entities::prelude::*;
 use crate::entities::product;
 use crate::models::product::{ProductRequest, ProductResponse};
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, Set};
-use sea_orm::QueryFilter;
+use sea_orm::entity::ModelTrait;
 use sea_orm::DbErr;
-use sea_orm::entity::ModelTrait; 
+use sea_orm::QueryFilter;
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, Set};
 
 /// Registers a new product
 pub async fn create_product(
@@ -57,7 +57,7 @@ pub async fn get_all_products(db: &DatabaseConnection) -> Result<Vec<ProductResp
     let products = product::Entity::find()
         .all(db)
         .await
-        .map_err(|_| "Failed to fetch products")?;// Assuming the error is a string
+        .map_err(|_| "Failed to fetch products")?; // Assuming the error is a string
 
     // Convert the Vec<product::Model> to Vec<ProductResponse>
     let product_responses = products
@@ -80,10 +80,7 @@ pub async fn update_product(
     request: ProductRequest,
 ) -> Result<ProductResponse, String> {
     // Fetch the existing product by ID
-    let product = match product::Entity::find_by_id(product_id)
-        .one(db)
-        .await
-    {
+    let product = match product::Entity::find_by_id(product_id).one(db).await {
         Ok(Some(product)) => product,
         Ok(None) => return Err(format!("Product with ID {} not found", product_id)),
         Err(err) => return Err(format!("Failed to fetch product: {}", err)),
@@ -113,12 +110,8 @@ pub async fn update_product(
     })
 }
 
-
 /// Deletes a product by its ID
-pub async fn delete_product(
-    db: &DatabaseConnection,
-    product_id: i32,
-) -> Result<(), String> {
+pub async fn delete_product(db: &DatabaseConnection, product_id: i32) -> Result<(), String> {
     // Find the product by its ID
     let product: Option<product::Model> = product::Entity::find_by_id(product_id)
         .one(db)
@@ -129,7 +122,10 @@ pub async fn delete_product(
     let product = product.ok_or("Product not found")?;
 
     // Delete the product
-    let delete_result = product.delete(db).await.map_err(|_| "Failed to delete product")?;
+    let delete_result = product
+        .delete(db)
+        .await
+        .map_err(|_| "Failed to delete product")?;
 
     // Ensure that one row was affected
     if delete_result.rows_affected == 0 {
@@ -138,4 +134,3 @@ pub async fn delete_product(
 
     Ok(())
 }
-

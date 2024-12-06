@@ -17,6 +17,6 @@ argon2 = "0.5.3"
 sea-orm-migration = "1.1.2"
 fmt = "0.1.0"
 rust_decimal = "1.31.0"
-
+jsonwebtoken = "9.3.0" 
 
 

@@ -1,6 +1,8 @@
 use crate::entities::prelude::*;
 use crate::entities::user;
 use crate::models::user::{UserLoginResponse, UserRegisterRequest, UserResponse};
+use crate::utils::jwt;
+use crate::utils::jwt::generate_jwt;
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
@@ -70,18 +72,21 @@ pub async fn authenticate_user(
 
     // Verify password
     let parsed_hash =
-        argon2::PasswordHash::new(&user.password_hash).map_err(|_| "Invalid password hash")?;
-    if argon2::Argon2::default()
+        PasswordHash::new(&user.password_hash).map_err(|_| "Invalid password hash")?;
+    if Argon2::default()
         .verify_password(password.as_bytes(), &parsed_hash)
         .is_err()
     {
         return Err("Invalid credentials".to_string());
     }
 
-    // Return success (e.g., a token or user info)
+    // Clone user.email to avoid moving it
+    let token = generate_jwt(user.id, user.email.clone()).map_err(|_| "Failed to generate JWT")?;
+
+    // Return success with token
     Ok(UserLoginResponse {
         id: user.id,
         email: user.email,
-        token: "dummy_token".to_string(), // Replace with a real token if using JWT
+        token,
     })
 }

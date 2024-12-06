@@ -1,9 +1,9 @@
 use crate::models::product::{ProductRequest, ProductResponse};
-use crate::services::product_service;  // Import the service where product logic resides
-use actix_web::{get, post, put, delete, web, HttpResponse, Responder};
+use crate::services::product_service; // Import the service where product logic resides
+use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 use sea_orm::DatabaseConnection;
+use serde::{Deserialize, Serialize};
 use validator::Validate;
-use serde::{Serialize, Deserialize};
 
 /// Standard response format for success
 #[derive(Serialize, Deserialize)]
@@ -24,7 +24,7 @@ pub struct ErrorResponse {
 #[post("/products")]
 async fn create_product(
     db: web::Data<DatabaseConnection>,
-    request: web::Json<ProductRequest>,  // Deserialize request body
+    request: web::Json<ProductRequest>, // Deserialize request body
 ) -> impl Responder {
     // Validate the input
     if let Err(validation_errors) = request.validate() {
@@ -69,7 +69,7 @@ async fn get_all_products(db: web::Data<DatabaseConnection>) -> impl Responder {
 #[get("/products/{id}")]
 async fn get_product(
     db: web::Data<DatabaseConnection>,
-    product_id: web::Path<i32>,  // Extract `id` from the URL
+    product_id: web::Path<i32>, // Extract `id` from the URL
 ) -> impl Responder {
     // Call the service to fetch product by ID
     match product_service::get_product_by_id(db.get_ref(), *product_id).await {
@@ -89,8 +89,8 @@ async fn get_product(
 #[put("/products/{id}")]
 async fn update_product(
     db: web::Data<DatabaseConnection>,
-    product_id: web::Path<i32>,  // Extract `id` from the URL
-    request: web::Json<ProductRequest>,  // Deserialize the updated product data
+    product_id: web::Path<i32>,         // Extract `id` from the URL
+    request: web::Json<ProductRequest>, // Deserialize the updated product data
 ) -> impl Responder {
     // Validate the input
     if let Err(validation_errors) = request.validate() {
@@ -119,11 +119,11 @@ async fn update_product(
 #[delete("/products/{id}")]
 async fn delete_product(
     db: web::Data<DatabaseConnection>,
-    product_id: web::Path<i32>,  // Extract `id` from the URL
+    product_id: web::Path<i32>, // Extract `id` from the URL
 ) -> impl Responder {
     // Call the service to delete the product
     match product_service::delete_product(db.get_ref(), *product_id).await {
-        Ok(()) => HttpResponse::Ok().json(ApiResponse::<()>{ 
+        Ok(()) => HttpResponse::Ok().json(ApiResponse::<()> {
             status: "success".to_string(),
             message: "Product deleted successfully".to_string(),
             data: None,
@@ -135,4 +135,3 @@ async fn delete_product(
         }),
     }
 }
-

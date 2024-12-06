@@ -7,9 +7,11 @@ use std::env;
 pub mod entities;
 use entities::{prelude::*, *};
 
+mod utils;
+
 mod routes;
-use routes::user_routes::*;
 use routes::product_routes::*;
+use routes::user_routes::*;
 
 mod db; // Module for database connection
 mod models; // Module for SeaORM models

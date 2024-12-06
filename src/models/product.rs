@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
 
 /// This struct is used to handle the creation or update of a product.
@@ -11,7 +11,7 @@ pub struct ProductRequest {
     #[validate(length(max = 100))]
     pub description: Option<String>,
 
-    #[validate(custom (function = "validate_decimal_range"))]
+    #[validate(custom(function = "validate_decimal_range"))]
     pub price: Decimal,
 }
 
