@@ -26,6 +26,18 @@ impl MigrationTrait for Migration {
                             .unique_key(),
                     )
                     .col(ColumnDef::new(User::PasswordHash).string().not_null())
+                    .col(
+                        ColumnDef::new(User::CreatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null()
+                            .extra("DEFAULT NOW()".to_owned()),
+                    )
+                    .col(
+                        ColumnDef::new(User::UpdatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null()
+                            .extra("DEFAULT NOW()".to_owned()),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -46,6 +58,18 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Product::Name).string().not_null())
                     .col(ColumnDef::new(Product::Description).text().null())
                     .col(ColumnDef::new(Product::Price).decimal().not_null())
+                    .col(
+                        ColumnDef::new(Product::CreatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null()
+                            .extra("DEFAULT NOW()".to_owned()),
+                    )
+                    .col(
+                        ColumnDef::new(Product::UpdatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null()
+                            .extra("DEFAULT NOW()".to_owned()),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -68,6 +92,18 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .from(Cart::Table, Cart::UserId)
                             .to(User::Table, User::Id),
+                    )
+                    .col(
+                        ColumnDef::new(Cart::CreatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null()
+                            .extra("DEFAULT NOW()".to_owned()),
+                    )
+                    .col(
+                        ColumnDef::new(Cart::UpdatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null()
+                            .extra("DEFAULT NOW()".to_owned()),
                     )
                     .to_owned(),
             )
@@ -99,6 +135,18 @@ impl MigrationTrait for Migration {
                             .from(CartItem::Table, CartItem::ProductId)
                             .to(Product::Table, Product::Id),
                     )
+                    .col(
+                        ColumnDef::new(CartItem::CreatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null()
+                            .extra("DEFAULT NOW()".to_owned()),
+                    )
+                    .col(
+                        ColumnDef::new(CartItem::UpdatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null()
+                            .extra("DEFAULT NOW()".to_owned()),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -121,9 +169,15 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Order::PaymentStatus).string().not_null())
                     .col(
                         ColumnDef::new(Order::CreatedAt)
-                            .timestamp()
+                            .timestamp_with_time_zone()
                             .not_null()
-                            .default(Expr::current_timestamp()),
+                            .extra("DEFAULT NOW()".to_owned()),
+                    )
+                    .col(
+                        ColumnDef::new(Order::UpdatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null()
+                            .extra("DEFAULT NOW()".to_owned()),
                     )
                     .foreign_key(
                         ForeignKey::create()
@@ -161,6 +215,18 @@ impl MigrationTrait for Migration {
                             .from(OrderItem::Table, OrderItem::ProductId)
                             .to(Product::Table, Product::Id),
                     )
+                    .col(
+                        ColumnDef::new(OrderItem::CreatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null()
+                            .extra("DEFAULT NOW()".to_owned()),
+                    )
+                    .col(
+                        ColumnDef::new(OrderItem::UpdatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null()
+                            .extra("DEFAULT NOW()".to_owned()),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -185,6 +251,8 @@ enum User {
     Id,
     Email,
     PasswordHash,
+    CreatedAt,
+    UpdatedAt,
 }
 
 #[derive(DeriveIden)]
@@ -194,6 +262,8 @@ enum Product {
     Name,
     Description,
     Price,
+    CreatedAt,
+    UpdatedAt,
 }
 
 #[derive(DeriveIden)]
@@ -201,6 +271,8 @@ enum Cart {
     Table,
     Id,
     UserId,
+    CreatedAt,
+    UpdatedAt,
 }
 
 #[derive(DeriveIden)]
@@ -210,6 +282,8 @@ enum CartItem {
     CartId,
     ProductId,
     Quantity,
+    CreatedAt,
+    UpdatedAt,
 }
 
 #[derive(DeriveIden)]
@@ -220,6 +294,7 @@ enum Order {
     TotalAmount,
     PaymentStatus,
     CreatedAt,
+    UpdatedAt,
 }
 
 #[derive(DeriveIden)]
@@ -230,4 +305,6 @@ enum OrderItem {
     ProductId,
     Quantity,
     Price,
+    CreatedAt,
+    UpdatedAt,
 }
