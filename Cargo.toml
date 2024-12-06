@@ -14,5 +14,7 @@ serde_json = "1.0"
 dotenvy = "0.15"  
 sqlx = { version = "0.8.2", features = ["runtime-tokio"] }
 argon2 = "0.5.3" 
+sea-orm-migration = "1.1.2"
+fmt = "0.1.0"
 
 

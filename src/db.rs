@@ -1,7 +1,7 @@
-use sea_orm::{Database, DatabaseConnection, DbErr};
 use dotenvy::dotenv;
+use sea_orm::{Database, DatabaseConnection, DbErr};
 use std::env;
- 
+
 // Function to establish a connection to the database
 pub async fn establish_connection() -> Result<DatabaseConnection, DbErr> {
     dotenv().ok(); // Load environment variables from `.env` file
@@ -11,6 +11,7 @@ pub async fn establish_connection() -> Result<DatabaseConnection, DbErr> {
 
     // Connect to the database using SeaORM and return Result
     Database::connect(&database_url).await
+    
 }
 
 pub async fn get_database_connection() -> Result<DatabaseConnection, DbErr> {
