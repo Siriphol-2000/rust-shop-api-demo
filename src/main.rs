@@ -9,6 +9,7 @@ use entities::{prelude::*, *};
 
 mod routes;
 use routes::user_routes::*;
+use routes::product_routes::*;
 
 mod db; // Module for database connection
 mod models; // Module for SeaORM models
@@ -41,6 +42,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .service(register) // Add your register route to the app
             .service(get_user) // Add the GET route
             .service(login) // Add the login route
+            .service(create_product)
+            .service(get_product)
+            .service(update_product)
+            .service(delete_product)
     })
     .bind("127.0.0.1:8080")? // Bind server to address
     .run()
