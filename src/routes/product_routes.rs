@@ -49,6 +49,22 @@ async fn create_product(
         }),
     }
 }
+#[get("/products")]
+async fn get_all_products(db: web::Data<DatabaseConnection>) -> impl Responder {
+    // Call the service to fetch all products
+    match product_service::get_all_products(db.get_ref()).await {
+        Ok(product_responses) => HttpResponse::Ok().json(ApiResponse {
+            status: "success".to_string(),
+            message: "Products found".to_string(),
+            data: Some(product_responses),
+        }),
+        Err(err) => HttpResponse::InternalServerError().json(ErrorResponse {
+            status: "error".to_string(),
+            message: "Failed to fetch products".to_string(),
+            error: Some(err),
+        }),
+    }
+}
 
 #[get("/products/{id}")]
 async fn get_product(

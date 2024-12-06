@@ -46,6 +46,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .service(get_product)
             .service(update_product)
             .service(delete_product)
+            .service(get_all_products)
     })
     .bind("127.0.0.1:8080")? // Bind server to address
     .run()

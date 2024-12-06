@@ -52,6 +52,27 @@ pub async fn get_product_by_id(
     }
 }
 
+pub async fn get_all_products(db: &DatabaseConnection) -> Result<Vec<ProductResponse>, String> {
+    // Fetch all products
+    let products = product::Entity::find()
+        .all(db)
+        .await
+        .map_err(|_| "Failed to fetch products")?;// Assuming the error is a string
+
+    // Convert the Vec<product::Model> to Vec<ProductResponse>
+    let product_responses = products
+        .iter()
+        .map(|product| ProductResponse {
+            id: product.id,
+            name: product.name.clone(),
+            description: product.description.clone(),
+            price: product.price,
+        })
+        .collect();
+
+    Ok(product_responses)
+}
+
 /// Updates an existing product
 pub async fn update_product(
     db: &DatabaseConnection,
