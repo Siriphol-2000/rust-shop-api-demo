@@ -1,13 +1,13 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use db::establish_connection;
-use routes::product_routes::*;
-use routes::user_routes::*;
+use handler::product_handler::*;
+use handler::user_handler::*;
 mod db; // Module for database connection
 pub mod entities;
 mod models; // Module for SeaORM models
-mod routes;
 mod services;
 mod utils;
+mod handler;
 
 // Default route handler function
 async fn default_route() -> impl Responder {

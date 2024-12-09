@@ -1,7 +1,5 @@
-use crate::entities::prelude::*;
 use crate::entities::user;
 use crate::models::user::{UserLoginResponse, UserRegisterRequest, UserResponse};
-use crate::utils::jwt;
 use crate::utils::jwt::generate_jwt;
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
