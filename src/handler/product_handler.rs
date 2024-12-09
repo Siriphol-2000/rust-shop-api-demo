@@ -1,10 +1,10 @@
 use crate::models::product::ProductRequest;
 use crate::services::product_service; // Import the service where product logic resides
-use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
+use actix_web::{delete, get, post, put, web, HttpResponse};
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
-
+use crate::utils::actix_error::ApiError;
 /// Standard response format for success
 #[derive(Serialize, Deserialize)]
 pub struct ApiResponse<T> {
@@ -22,116 +22,89 @@ pub struct ErrorResponse {
 }
 
 #[post("/products")]
-async fn create_product(
+pub async fn create_product(
     db: web::Data<DatabaseConnection>,
-    request: web::Json<ProductRequest>, // Deserialize request body
-) -> impl Responder {
-    // Validate the input
-    if let Err(validation_errors) = request.validate() {
-        return HttpResponse::BadRequest().json(ErrorResponse {
-            status: "error".to_string(),
-            message: "Validation failed".to_string(),
-            error: Some(validation_errors.to_string()),
-        });
-    }
+    request: web::Json<ProductRequest>,
+) -> Result<HttpResponse, ApiError> {
+    request
+        .validate()
+        .map_err(|e| ApiError::ValidationError(e.to_string()))?;
 
-    // Call the service to create the product
-    match product_service::create_product(db.get_ref(), request.into_inner()).await {
-        Ok(product_response) => HttpResponse::Created().json(ApiResponse {
-            status: "success".to_string(),
-            message: "Product created successfully".to_string(),
-            data: Some(product_response),
-        }),
-        Err(err) => HttpResponse::InternalServerError().json(ErrorResponse {
-            status: "error".to_string(),
-            message: "Failed to create product".to_string(),
-            error: Some(err),
-        }),
-    }
+    let product_response = product_service::create_product(db.get_ref(), request.into_inner())
+        .await
+        .map_err(|_| ApiError::DatabaseError)?;
+
+    Ok(HttpResponse::Created().json(ApiResponse {
+        status: "success".to_string(),
+        message: "Product created successfully".to_string(),
+        data: Some(product_response),
+    }))
 }
+
 #[get("/products")]
-async fn get_all_products(db: web::Data<DatabaseConnection>) -> impl Responder {
-    // Call the service to fetch all products
-    match product_service::get_all_products(db.get_ref()).await {
-        Ok(product_responses) => HttpResponse::Ok().json(ApiResponse {
-            status: "success".to_string(),
-            message: "Products found".to_string(),
-            data: Some(product_responses),
-        }),
-        Err(err) => HttpResponse::InternalServerError().json(ErrorResponse {
-            status: "error".to_string(),
-            message: "Failed to fetch products".to_string(),
-            error: Some(err),
-        }),
-    }
+pub async fn get_all_products(
+    db: web::Data<DatabaseConnection>,
+) -> Result<HttpResponse, ApiError> {
+    let product_responses = product_service::get_all_products(db.get_ref())
+        .await
+        .map_err(|_| ApiError::FetchError)?;
+
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        status: "success".to_string(),
+        message: "Products fetched successfully".to_string(),
+        data: Some(product_responses),
+    }))
 }
 
 #[get("/products/{id}")]
-async fn get_product(
+pub async fn get_product(
     db: web::Data<DatabaseConnection>,
-    product_id: web::Path<i32>, // Extract `id` from the URL
-) -> impl Responder {
-    // Call the service to fetch product by ID
-    match product_service::get_product_by_id(db.get_ref(), *product_id).await {
-        Ok(product_response) => HttpResponse::Ok().json(ApiResponse {
-            status: "success".to_string(),
-            message: "Product found".to_string(),
-            data: Some(product_response),
-        }),
-        Err(err) => HttpResponse::NotFound().json(ErrorResponse {
-            status: "error".to_string(),
-            message: "Product not found".to_string(),
-            error: Some(err),
-        }),
-    }
+    product_id: web::Path<i32>,
+) -> Result<HttpResponse, ApiError> {
+    let product_response = product_service::get_product_by_id(db.get_ref(), *product_id)
+        .await
+        .map_err(|_| ApiError::NotFound)?;
+
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        status: "success".to_string(),
+        message: "Product fetched successfully".to_string(),
+        data: Some(product_response),
+    }))
 }
 
 #[put("/products/{id}")]
-async fn update_product(
+pub async fn update_product(
     db: web::Data<DatabaseConnection>,
-    product_id: web::Path<i32>,         // Extract `id` from the URL
-    request: web::Json<ProductRequest>, // Deserialize the updated product data
-) -> impl Responder {
-    // Validate the input
-    if let Err(validation_errors) = request.validate() {
-        return HttpResponse::BadRequest().json(ErrorResponse {
-            status: "error".to_string(),
-            message: "Validation failed".to_string(),
-            error: Some(validation_errors.to_string()),
-        });
-    }
+    product_id: web::Path<i32>,
+    request: web::Json<ProductRequest>,
+) -> Result<HttpResponse, ApiError> {
+    request
+        .validate()
+        .map_err(|e| ApiError::ValidationError(e.to_string()))?;
 
-    // Call the service to update the product
-    match product_service::update_product(db.get_ref(), *product_id, request.into_inner()).await {
-        Ok(product_response) => HttpResponse::Ok().json(ApiResponse {
-            status: "success".to_string(),
-            message: "Product updated successfully".to_string(),
-            data: Some(product_response),
-        }),
-        Err(err) => HttpResponse::InternalServerError().json(ErrorResponse {
-            status: "error".to_string(),
-            message: "Failed to update product".to_string(),
-            error: Some(err),
-        }),
-    }
+    let product_response = product_service::update_product(db.get_ref(), *product_id, request.into_inner())
+        .await
+        .map_err(|_| ApiError::UpdateError)?;
+
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        status: "success".to_string(),
+        message: "Product updated successfully".to_string(),
+        data: Some(product_response),
+    }))
 }
 
 #[delete("/products/{id}")]
-async fn delete_product(
+pub async fn delete_product(
     db: web::Data<DatabaseConnection>,
-    product_id: web::Path<i32>, // Extract `id` from the URL
-) -> impl Responder {
-    // Call the service to delete the product
-    match product_service::delete_product(db.get_ref(), *product_id).await {
-        Ok(()) => HttpResponse::Ok().json(ApiResponse::<()> {
-            status: "success".to_string(),
-            message: "Product deleted successfully".to_string(),
-            data: None,
-        }),
-        Err(err) => HttpResponse::InternalServerError().json(ErrorResponse {
-            status: "error".to_string(),
-            message: "Failed to delete product".to_string(),
-            error: Some(err),
-        }),
-    }
+    product_id: web::Path<i32>,
+) -> Result<HttpResponse, ApiError> {
+    product_service::delete_product(db.get_ref(), *product_id)
+        .await
+        .map_err(|_| ApiError::DeleteError)?;
+
+    Ok(HttpResponse::Ok().json(ApiResponse::<()> {
+        status: "success".to_string(),
+        message: "Product deleted successfully".to_string(),
+        data: None,
+    }))
 }
