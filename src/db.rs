@@ -13,7 +13,3 @@ pub async fn establish_connection() -> Result<DatabaseConnection, DbErr> {
     Database::connect(&database_url).await
 }
 
-pub async fn get_database_connection() -> Result<DatabaseConnection, DbErr> {
-    // Establish connection and return as Result
-    Ok(establish_connection().await?)
-}
