@@ -1,6 +1,8 @@
 use crate::models::user::{UserLoginRequest, UserRegisterRequest};
 use crate::services::user_service;
-use actix_web::{get, post, web, HttpResponse, Responder};
+use crate::utils::actix_error::ApiError;
+use crate::ApiResponse;
+use actix_web::{get, post, web, HttpResponse};
 use sea_orm::DatabaseConnection;
 use validator::Validate;
 
@@ -8,43 +10,55 @@ use validator::Validate;
 async fn register(
     db: web::Data<DatabaseConnection>,
     request: web::Json<UserRegisterRequest>,
-) -> impl Responder {
-    // Validate the input
-    if let Err(validation_errors) = request.validate() {
-        return HttpResponse::BadRequest().json(validation_errors);
-    }
+) -> Result<HttpResponse, ApiError> {
+    request
+        .validate()
+        .map_err(|e| ApiError::ValidationError(e.to_string()))?;
 
-    // Call the service
-    match user_service::register_user(db.get_ref(), request.into_inner()).await {
-        Ok(user_response) => HttpResponse::Created().json(user_response),
-        Err(err) => HttpResponse::InternalServerError().body(err),
-    }
+    let user_response = user_service::register_user(db.get_ref(), request.into_inner())
+        .await
+        .map_err(|_| ApiError::DatabaseError)?;
+
+    Ok(HttpResponse::Created().json(ApiResponse {
+        status: "success".to_string(),
+        message: "registration successfully".to_string(),
+        data: Some(user_response),
+    }))
 }
 
 #[get("/users/{id}")]
 async fn get_user(
     db: web::Data<DatabaseConnection>,
     user_id: web::Path<i32>, // Extract `id` from the URL
-) -> impl Responder {
-    match user_service::get_user_by_id(db.get_ref(), *user_id).await {
-        Ok(user_response) => HttpResponse::Ok().json(user_response),
-        Err(err) => HttpResponse::NotFound().body(err),
-    }
+) -> Result<HttpResponse, ApiError> {
+    let user_response = user_service::get_user_by_id(db.get_ref(), *user_id)
+        .await
+        .map_err(|_| ApiError::DatabaseError)?;
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        status: "success".to_string(),
+        message: "Product fetched successfully".to_string(),
+        data: Some(user_response),
+    }))
 }
 
 #[post("/login")]
 async fn login(
     db: web::Data<DatabaseConnection>,
     request: web::Json<UserLoginRequest>,
-) -> impl Responder {
+) -> Result<HttpResponse, ApiError> {
     // Validate the input
-    if let Err(validation_errors) = request.validate() {
-        return HttpResponse::BadRequest().json(validation_errors);
-    }
+    request
+        .validate()
+        .map_err(|e| ApiError::ValidationError(e.to_string()))?;
 
-    // Authenticate the user
-    match user_service::authenticate_user(db.get_ref(), &request.email, &request.password).await {
-        Ok(token) => HttpResponse::Ok().json(token), // Return a token or session info
-        Err(err) => HttpResponse::Unauthorized().body(err),
-    }
+    let user_response =
+        user_service::authenticate_user(db.get_ref(), &request.email, &request.password)
+            .await
+            .map_err(|_| ApiError::DatabaseError)?;
+
+    Ok(HttpResponse::Created().json(ApiResponse {
+        status: "success".to_string(),
+        message: "login successfully".to_string(),
+        data: Some(user_response),
+    }))
 }

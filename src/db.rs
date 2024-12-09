@@ -12,4 +12,3 @@ pub async fn establish_connection() -> Result<DatabaseConnection, DbErr> {
     // Connect to the database using SeaORM and return Result
     Database::connect(&database_url).await
 }
-

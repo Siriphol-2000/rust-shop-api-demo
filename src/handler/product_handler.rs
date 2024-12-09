@@ -1,10 +1,10 @@
 use crate::models::product::ProductRequest;
 use crate::services::product_service; // Import the service where product logic resides
+use crate::utils::actix_error::ApiError;
 use actix_web::{delete, get, post, put, web, HttpResponse};
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
-use crate::utils::actix_error::ApiError;
 /// Standard response format for success
 #[derive(Serialize, Deserialize)]
 pub struct ApiResponse<T> {
@@ -42,9 +42,7 @@ pub async fn create_product(
 }
 
 #[get("/products")]
-pub async fn get_all_products(
-    db: web::Data<DatabaseConnection>,
-) -> Result<HttpResponse, ApiError> {
+pub async fn get_all_products(db: web::Data<DatabaseConnection>) -> Result<HttpResponse, ApiError> {
     let product_responses = product_service::get_all_products(db.get_ref())
         .await
         .map_err(|_| ApiError::FetchError)?;
@@ -82,9 +80,10 @@ pub async fn update_product(
         .validate()
         .map_err(|e| ApiError::ValidationError(e.to_string()))?;
 
-    let product_response = product_service::update_product(db.get_ref(), *product_id, request.into_inner())
-        .await
-        .map_err(|_| ApiError::UpdateError)?;
+    let product_response =
+        product_service::update_product(db.get_ref(), *product_id, request.into_inner())
+            .await
+            .map_err(|_| ApiError::UpdateError)?;
 
     Ok(HttpResponse::Ok().json(ApiResponse {
         status: "success".to_string(),

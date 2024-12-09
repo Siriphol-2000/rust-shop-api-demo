@@ -3,7 +3,7 @@ use crate::models::product::{ProductRequest, ProductResponse};
 use sea_orm::entity::ModelTrait;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 
-use chrono:: Utc;
+use chrono::Utc;
 
 pub async fn create_product(
     db: &DatabaseConnection,
