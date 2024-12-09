@@ -6,16 +6,24 @@ use sea_orm::DbErr;
 use sea_orm::QueryFilter;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, Set};
 
-/// Registers a new product
+use chrono::{TimeZone, Utc};
+use sea_orm::prelude::*;
+
 pub async fn create_product(
     db: &DatabaseConnection,
     request: ProductRequest,
 ) -> Result<ProductResponse, String> {
-    // Create a new product record
+    // Get the current timestamp
+    let now_utc = Utc::now();
+    let now_fixed: chrono::DateTime<chrono::FixedOffset> = now_utc.into(); // Convert to FixedOffset
+
+    // Create a new product record with timestamps
     let new_product = product::ActiveModel {
         name: Set(request.name),
         description: Set(request.description),
         price: Set(request.price),
+        created_at: Set(now_fixed), // Set the created_at timestamp
+        updated_at: Set(now_fixed), // Set the updated_at timestamp
         ..Default::default()
     };
 
@@ -79,7 +87,9 @@ pub async fn update_product(
     product_id: i32,
     request: ProductRequest,
 ) -> Result<ProductResponse, String> {
-    // Fetch the existing product by ID
+    let now_utc = Utc::now();
+    let now_fixed: chrono::DateTime<chrono::FixedOffset> = now_utc.into(); // Convert to FixedOffset
+                                                                           // Fetch the existing product by ID
     let product = match product::Entity::find_by_id(product_id).one(db).await {
         Ok(Some(product)) => product,
         Ok(None) => return Err(format!("Product with ID {} not found", product_id)),
@@ -87,11 +97,12 @@ pub async fn update_product(
     };
 
     // Convert the fetched model to ActiveModel for updates
-    let mut updated_product = product::ActiveModel {
+    let updated_product = product::ActiveModel {
         id: Set(product.id), // Setting the ID so that we can update the record
         name: Set(request.name),
         description: Set(request.description),
         price: Set(request.price),
+        updated_at: Set(now_fixed),
         ..Default::default() // Keep the rest of the fields unchanged
     };
 
