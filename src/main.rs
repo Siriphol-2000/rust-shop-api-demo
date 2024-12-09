@@ -1,21 +1,13 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use db::establish_connection;
-use dotenvy::dotenv;
-use sea_orm::{Database, DatabaseConnection};
-use std::env;
-
-pub mod entities;
-use entities::{prelude::*, *};
-
-mod utils;
-
-mod routes;
 use routes::product_routes::*;
 use routes::user_routes::*;
-
 mod db; // Module for database connection
+pub mod entities;
 mod models; // Module for SeaORM models
+mod routes;
 mod services;
+mod utils;
 
 // Default route handler function
 async fn default_route() -> impl Responder {
@@ -24,14 +16,6 @@ async fn default_route() -> impl Responder {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // // Load environment variables from .env file
-    // dotenv().ok();
-
-    // // Get the database URL from the environment variable
-    // let database_url = env::var("DATABASE_URL")?;
-
-    // // Establish a connection to the database
-    // let db: DatabaseConnection = Database::connect(&database_url).await?;
     let db = establish_connection().await?;
 
     println!("Connected to the database!");
