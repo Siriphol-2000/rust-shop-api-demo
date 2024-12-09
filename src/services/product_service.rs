@@ -1,13 +1,9 @@
-use crate::entities::prelude::*;
 use crate::entities::product;
 use crate::models::product::{ProductRequest, ProductResponse};
 use sea_orm::entity::ModelTrait;
-use sea_orm::DbErr;
-use sea_orm::QueryFilter;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, Set};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 
-use chrono::{TimeZone, Utc};
-use sea_orm::prelude::*;
+use chrono:: Utc;
 
 pub async fn create_product(
     db: &DatabaseConnection,
