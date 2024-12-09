@@ -11,6 +11,8 @@ pub struct Model {
     pub product_id: i32,
     pub quantity: i32,
     pub price: Decimal,
+    pub created_at: DateTimeWithTimeZone,
+    pub updated_at: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -10,7 +10,8 @@ pub struct Model {
     pub user_id: i32,
     pub total_amount: Decimal,
     pub payment_status: String,
-    pub created_at: DateTime,
+    pub created_at: DateTimeWithTimeZone,
+    pub updated_at: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
