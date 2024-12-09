@@ -1,4 +1,4 @@
-use crate::models::product::{ProductRequest, ProductResponse};
+use crate::models::product::ProductRequest;
 use crate::services::product_service; // Import the service where product logic resides
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 use sea_orm::DatabaseConnection;
