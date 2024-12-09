@@ -2,6 +2,8 @@ use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use db::establish_connection;
 use handler::product_handler::*;
 use handler::user_handler::*;
+use tracing_subscriber; // Import for tracing setup
+use tracing::Level; // Log level
 mod db; // Module for database connection
 pub mod entities;
 mod models; // Module for SeaORM models
@@ -19,6 +21,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db = establish_connection().await?;
 
     println!("Connected to the database!");
+    
+// Setup tracing for logging
+tracing_subscriber::fmt()
+.with_max_level(Level::DEBUG)  // Set log level to DEBUG
+.init();  // Initialize the subscriber
 
     // Start Actix Web server
     HttpServer::new(move || {

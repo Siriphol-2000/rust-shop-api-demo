@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 actix-web = "4"
 validator = {version ="0.19.0" , features = ["derive"] }
-sea-orm = { version = "1.1.2", features = ["sqlx-postgres"] }
+sea-orm = { version = "1.1.2", features = ["sqlx-postgres","with-chrono","macros"] }
 tokio = { version = "1", features = ["full"] }
 chrono = "0.4.38"
 serde = { version = "1.0", features = ["derive"] }
@@ -18,5 +18,7 @@ sea-orm-migration = "1.1.2"
 fmt = "0.1.0"
 rust_decimal = "1.31.0"
 jsonwebtoken = "9.3.0" 
+tracing = "0.1.41"    # for logging
+tracing-subscriber = "0.3.19"  # for handling log output
 
 
