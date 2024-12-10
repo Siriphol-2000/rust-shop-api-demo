@@ -5,7 +5,6 @@ use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, Qu
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-
 /// Struct for creating or updating a cart
 #[derive(Debug, Deserialize, Validate)]
 pub struct CartRequest {

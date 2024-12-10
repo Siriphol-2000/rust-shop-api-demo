@@ -1,6 +1,7 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use db::establish_connection;
 use handler::cart_handler::*;
+use handler::order_handler::*;
 use handler::product_handler::*;
 use handler::user_handler::*;
 use tracing::Level;
@@ -45,6 +46,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .service(add_item_to_cart_handler)
             .service(remove_item_from_cart_handler)
             .service(clear_cart_handler)
+            .service(create_order_handler)
+            .service(get_order_with_items_handler)
+            .service(update_payment_status_handler)
+            .service(delete_order_handler)
+            .service(create_order_handler) //orders
+            .service(get_order_with_items_handler)
+            .service(update_payment_status_handler)
+            .service(delete_order_handler)
     })
     .bind("127.0.0.1:8080")? // Bind server to address
     .run()
