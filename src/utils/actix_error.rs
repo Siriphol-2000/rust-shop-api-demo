@@ -23,11 +23,25 @@ impl ResponseError for ApiError {
     fn error_response(&self) -> HttpResponse {
         let (status, message) = match self {
             ApiError::ValidationError(msg) => (StatusCode::BAD_REQUEST, msg.clone()),
-            ApiError::NotFound { entity } => (StatusCode::NOT_FOUND, format!("{} not found", entity)),
-            ApiError::FetchError { entity } => (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to fetch {}", entity)),
-            ApiError::DatabaseError { entity } => (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create {}", entity)),
-            ApiError::UpdateError { entity } => (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to update {}", entity)),
-            ApiError::DeleteError { entity } => (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to delete {}", entity)),
+            ApiError::NotFound { entity } => {
+                (StatusCode::NOT_FOUND, format!("{} not found", entity))
+            }
+            ApiError::FetchError { entity } => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to fetch {}", entity),
+            ),
+            ApiError::DatabaseError { entity } => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to create {}", entity),
+            ),
+            ApiError::UpdateError { entity } => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to update {}", entity),
+            ),
+            ApiError::DeleteError { entity } => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to delete {}", entity),
+            ),
         };
 
         HttpResponse::build(status).json(ErrorResponse {

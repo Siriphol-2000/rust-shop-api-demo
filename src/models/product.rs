@@ -5,10 +5,10 @@ use validator::{Validate, ValidationError};
 /// This struct is used to handle the creation or update of a product.
 #[derive(Debug, Deserialize, Validate)]
 pub struct ProductRequest {
-    #[validate(length(min = 1))]
+    #[validate(length(min = 1, message = "Product name cannot be empty."))]
     pub name: String,
 
-    #[validate(length(max = 100))]
+    #[validate(length(max = 100, message = "Description cannot exceed 100 characters."))]
     pub description: Option<String>,
 
     #[validate(custom(function = "validate_decimal_range"))]
@@ -38,7 +38,9 @@ impl From<crate::entities::product::Model> for ProductResponse {
 /// Custom validator for the `Decimal` type to check that the value is not less than zero.
 fn validate_decimal_range(value: &Decimal) -> Result<(), ValidationError> {
     if *value < Decimal::new(0, 0) {
-        return Err(ValidationError::new("decimal_less_than_zero"));
+        let mut error = ValidationError::new("price_validation");
+        error.message = Some("Price must be zero or a positive value.".into());
+        return Err(error);
     }
     Ok(())
 }
