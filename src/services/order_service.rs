@@ -173,7 +173,8 @@ impl OrderService {
         transaction.commit().await?;
         dotenv().ok();
         // Generate PromptPay QR Code after successful order creation
-        let phone_number: Box<String> = Box::new(env::var("My_PHONE_NUMBER").expect("My_PHONE_NUMBER not set"));
+        let phone_number: Box<String> =
+            Box::new(env::var("My_PHONE_NUMBER").expect("My_PHONE_NUMBER not set"));
         let qr_code_path = format!("qrcodes/order_{}_qr.png", new_order.id);
 
         match PromptPayUtils::generate_qr(
