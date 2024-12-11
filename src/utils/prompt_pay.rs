@@ -1,5 +1,5 @@
 use crc::{Algorithm, Crc};
-use image::{ Luma};
+use image::Luma;
 use qrcode::{EcLevel, QrCode};
 
 pub struct PromptPayUtils;
