@@ -1,14 +1,18 @@
+use super::cart_service::{CartItemResponse, CartResponse};
 use crate::entities::{cart, cart_item, order, order_item};
+use crate::utils::prompt_pay::PromptPayUtils; // Import the PromptPay utility
 use chrono::Utc;
+use dotenvy::dotenv;
+use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, Set,
     TransactionTrait,
 };
 use serde::{Deserialize, Serialize};
+use std::env;
+use std::path::Path;
 use validator::{Validate, ValidationError};
-
-use super::cart_service::{CartItemResponse, CartResponse};
 
 /// Struct for creating an order
 #[derive(Debug, Deserialize, Serialize, Validate)]
@@ -167,6 +171,24 @@ impl OrderService {
         }
 
         transaction.commit().await?;
+        dotenv().ok();
+        // Generate PromptPay QR Code after successful order creation
+        let phone_number: Box<String> = Box::new(env::var("My_PHONE_NUMBER").expect("My_PHONE_NUMBER not set"));
+        let qr_code_path = format!("qrcodes/order_{}_qr.png", new_order.id);
+
+        match PromptPayUtils::generate_qr(
+            phone_number,
+            total_amount.to_f64().unwrap(),
+            &qr_code_path,
+        ) {
+            Ok(_) => {
+                println!("QR Code saved to: {}", qr_code_path);
+            }
+            Err(e) => {
+                eprintln!("Failed to generate QR Code: {}", e);
+            }
+        }
+
         Ok(order_model)
     }
 
