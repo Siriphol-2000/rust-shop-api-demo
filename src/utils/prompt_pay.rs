@@ -42,8 +42,8 @@ impl PromptPayUtils {
 
         // Construct the payload without the CRC
         let payload = format!(
-            "00020101021129370016A00000067701011101130066{:0>9}5802TH53037646304",
-            sanitized_phone
+            "00020101021129370016A00000067701011101130066{:0>9}5802TH53037645408{}6304",
+            sanitized_phone,formatted_amount
         );
 
         // Calculate the CRC and append it to the payload
