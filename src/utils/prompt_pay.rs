@@ -1,5 +1,5 @@
 use crc::{Algorithm, Crc};
-use image::{ImageBuffer, Luma};
+use image::{ Luma};
 use qrcode::{EcLevel, QrCode};
 
 pub struct PromptPayUtils;
@@ -12,7 +12,7 @@ impl PromptPayUtils {
     /// * `amount` - The transaction amount in Thai Baht
     /// * `output_path` - File path to save the QR code image
     pub fn generate_qr(
-        phone_number: Box<String>,
+        phone_number: String,
         amount: f64,
         output_path: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -32,7 +32,7 @@ impl PromptPayUtils {
     }
 
     /// Generate the PromptPay payload string
-    fn generate_payload(phone_number: Box<String>, amount: f64) -> Result<String, String> {
+    fn generate_payload(phone_number: String, amount: f64) -> Result<String, String> {
         // Sanitize the phone number to ensure it meets PromptPay's requirements
         let sanitized_phone = Self::sanitize_phone_number(phone_number)?;
 
@@ -43,7 +43,7 @@ impl PromptPayUtils {
         // Construct the payload without the CRC
         let payload = format!(
             "00020101021129370016A00000067701011101130066{:0>9}5802TH53037645408{}6304",
-            sanitized_phone,formatted_amount
+            sanitized_phone, formatted_amount
         );
 
         // Calculate the CRC and append it to the payload
@@ -59,7 +59,7 @@ impl PromptPayUtils {
     }
 
     /// Sanitize the phone number by ensuring it's valid for PromptPay
-    fn sanitize_phone_number(phone_number: Box<String>) -> Result<String, String> {
+    fn sanitize_phone_number(phone_number: String) -> Result<String, String> {
         let sanitized = phone_number
             .trim()
             .replace(['-', '+'], "")
@@ -79,13 +79,13 @@ impl PromptPayUtils {
         // Define the CRC-16 XMODEM algorithm
         const CRC_16_XMODEM: Crc<u16> = Crc::<u16>::new(&Algorithm {
             width: 16,
-            poly: 0x1021,    // Polynomial for XMODEM
-            init: 0xFFFF,    // Initial value
-            refin: false,    // No reflection of input bits
-            refout: false,   // No reflection of output bits
-            xorout: 0x0000,  // No XOR applied to the output
-            check: 0x906E,   // Check value for validation
-            residue: 0x0000, // Residue value
+            poly: 0x1021,   // Polynomial for XMODEM
+            init: 0xFFFF,   // Initial value
+            refin: false,   // No reflection of input bits
+            refout: false,  // No reflection of output bits
+            xorout: 0x0000, // No XOR applied to the output
+            check: 0x906E,  // Check value for validation
+            residue: 0x0000,
         });
 
         // Calculate the CRC for the payload
