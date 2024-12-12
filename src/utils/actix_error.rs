@@ -19,30 +19,31 @@ pub enum ApiError {
     DeleteError { entity: String },
 }
 
+impl ApiError {
+    fn status_code(&self) -> StatusCode {
+        match self {
+            ApiError::ValidationError(_) => StatusCode::BAD_REQUEST,
+            ApiError::NotFound { .. } => StatusCode::NOT_FOUND,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+
+    fn error_message(&self) -> String {
+        match self {
+            ApiError::ValidationError(msg) => msg.clone(),
+            ApiError::NotFound { entity } => format!("{} not found", entity),
+            ApiError::FetchError { entity } => format!("Failed to fetch {}", entity),
+            ApiError::DatabaseError { entity } => format!("Failed to create {}", entity),
+            ApiError::UpdateError { entity } => format!("Failed to update {}", entity),
+            ApiError::DeleteError { entity } => format!("Failed to delete {}", entity),
+        }
+    }
+}
+
 impl ResponseError for ApiError {
     fn error_response(&self) -> HttpResponse {
-        let (status, message) = match self {
-            ApiError::ValidationError(msg) => (StatusCode::BAD_REQUEST, msg.clone()),
-            ApiError::NotFound { entity } => {
-                (StatusCode::NOT_FOUND, format!("{} not found", entity))
-            }
-            ApiError::FetchError { entity } => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to fetch {}", entity),
-            ),
-            ApiError::DatabaseError { entity } => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to create {}", entity),
-            ),
-            ApiError::UpdateError { entity } => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to update {}", entity),
-            ),
-            ApiError::DeleteError { entity } => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to delete {}", entity),
-            ),
-        };
+        let status = self.status_code();
+        let message = self.error_message();
 
         HttpResponse::build(status).json(ErrorResponse {
             status: "error".to_string(),
@@ -52,11 +53,7 @@ impl ResponseError for ApiError {
     }
 
     fn status_code(&self) -> StatusCode {
-        match self {
-            ApiError::ValidationError(_) => StatusCode::BAD_REQUEST,
-            ApiError::NotFound { .. } => StatusCode::NOT_FOUND,
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
-        }
+        self.status_code()
     }
 }
 
