@@ -49,7 +49,11 @@ impl From<ValidationErrors> for ApiError {
                     field,
                     errors
                         .iter()
-                        .map(|e| e.message.clone().unwrap_or_else(|| "Unknown error".into()).to_string()) // Convert Cow to String
+                        .map(|e| e
+                            .message
+                            .clone()
+                            .unwrap_or_else(|| "Unknown error".into())
+                            .to_string()) // Convert Cow to String
                         .collect::<Vec<String>>()
                         .join(", ")
                 )

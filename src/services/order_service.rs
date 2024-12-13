@@ -319,9 +319,7 @@ impl OrderService {
         use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, TransactionTrait};
 
         // Start a transaction to ensure atomicity
-        let txn = db
-            .begin()
-            .await?;
+        let txn = db.begin().await?;
 
         // Fetch all cart IDs for the user
         let cart_ids: Vec<i32> = cart::Entity::find()
@@ -349,26 +347,26 @@ impl OrderService {
             .await?;
 
         // Commit the transaction
-        txn.commit()
-            .await?;
+        txn.commit().await?;
 
         Ok(())
     }
-/// Fetch price for a given product ID
-pub async fn get_product_price(
-    db: &DatabaseConnection,
-    product_id: i32,
-) -> Result<Decimal, ApiError> {
-    use crate::entities::product;
+    /// Fetch price for a given product ID
+    pub async fn get_product_price(
+        db: &DatabaseConnection,
+        product_id: i32,
+    ) -> Result<Decimal, ApiError> {
+        use crate::entities::product;
 
-    // Fetch the product by its ID
-    let product = product::Entity::find_by_id(product_id)
-        .one(db)
-        .await?
-        .ok_or_else(|| ApiError::NotFound(format!("Product with ID {} not found", product_id)))?;
+        // Fetch the product by its ID
+        let product = product::Entity::find_by_id(product_id)
+            .one(db)
+            .await?
+            .ok_or_else(|| {
+                ApiError::NotFound(format!("Product with ID {} not found", product_id))
+            })?;
 
-    // Return the product's price
-    Ok(product.price)
-}
-
+        // Return the product's price
+        Ok(product.price)
+    }
 }

@@ -1,7 +1,12 @@
-use crate::{entities::{cart, cart_item}, utils::actix_error::ApiError};
+use crate::{
+    entities::{cart, cart_item},
+    utils::actix_error::ApiError,
+};
 use actix_web::{web, HttpResponse, Responder};
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DeleteResult, EntityTrait, QueryFilter, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DeleteResult, EntityTrait, QueryFilter, Set,
+};
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
@@ -77,7 +82,10 @@ pub async fn create_cart(
 
     // Validate the input
     if let Err(validation_errors) = request.validate() {
-        return Err(ApiError::ValidationError(format!("Validation failed: {}", validation_errors)));
+        return Err(ApiError::ValidationError(format!(
+            "Validation failed: {}",
+            validation_errors
+        )));
     }
 
     // Create the cart in the database
@@ -109,7 +117,10 @@ pub async fn add_item_to_cart(
 
     // Validate the input
     if let Err(validation_errors) = request.validate() {
-        return Err(ApiError::ValidationError(format!("Validation failed: {}", validation_errors)));
+        return Err(ApiError::ValidationError(format!(
+            "Validation failed: {}",
+            validation_errors
+        )));
     }
 
     // Create the cart item in the database
@@ -122,10 +133,9 @@ pub async fn add_item_to_cart(
         ..Default::default()
     };
 
-    let inserted_cart_item = cart_item
-        .insert(db)
-        .await
-        .map_err(|err| ApiError::InternalServerError(format!("Failed to add item to cart: {}", err)))?;
+    let inserted_cart_item = cart_item.insert(db).await.map_err(|err| {
+        ApiError::InternalServerError(format!("Failed to add item to cart: {}", err))
+    })?;
 
     // Return the response with cart item details
     Ok(CartItemResponse::from(inserted_cart_item))
@@ -141,7 +151,9 @@ pub async fn remove_item_from_cart(
         .filter(cart_item::Column::Id.eq(cart_item_id)) // Apply filter to delete specific cart item
         .exec(db)
         .await
-        .map_err(|err| ApiError::InternalServerError(format!("Failed to remove item from cart: {}", err)))
+        .map_err(|err| {
+            ApiError::InternalServerError(format!("Failed to remove item from cart: {}", err))
+        })
 }
 
 /// Service function to clear all items in a cart

@@ -25,9 +25,7 @@ pub async fn create_product(
     };
 
     // Insert the product into the database
-    let result = new_product
-        .insert(db)
-        .await?;
+    let result = new_product.insert(db).await?;
 
     // Return the response with product details
     Ok(ProductResponse {
@@ -44,25 +42,24 @@ pub async fn get_product_by_id(
     product_id: i32,
 ) -> Result<ProductResponse, ApiError> {
     // Fetch the product by ID
-let product=product::Entity::find_by_id(product_id).one(db).await?;
-match product {
-    Some(product)=>Ok(ProductResponse{
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        price: product.price,
-    }),
-    None => Err(ApiError::NotFound(format!("Product with ID {} not found", product_id))),
-
+    let product = product::Entity::find_by_id(product_id).one(db).await?;
+    match product {
+        Some(product) => Ok(ProductResponse {
+            id: product.id,
+            name: product.name,
+            description: product.description,
+            price: product.price,
+        }),
+        None => Err(ApiError::NotFound(format!(
+            "Product with ID {} not found",
+            product_id
+        ))),
+    }
 }
-    
-} 
 
 pub async fn get_all_products(db: &DatabaseConnection) -> Result<Vec<ProductResponse>, ApiError> {
     // Fetch all products
-    let products = product::Entity::find()
-        .all(db)
-        .await?; // Assuming the error is a string
+    let products = product::Entity::find().all(db).await?; // Assuming the error is a string
 
     // Convert the Vec<product::Model> to Vec<ProductResponse>
     let product_responses = products
@@ -87,15 +84,18 @@ pub async fn update_product(
     let now_utc = Utc::now();
     let now_fixed: chrono::DateTime<chrono::FixedOffset> = now_utc.into(); // Convert to FixedOffset
                                                                            // Fetch the existing product by ID
-    let product =  product::Entity::find_by_id(product_id).one(db).await?;
-      match product {
-    Some(product) => Ok(ProductResponse{
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        price: product.price,
-    }),
-    None => Err(ApiError::NotFound(format!("Product with ID {} not found", product_id))),
+    let product = product::Entity::find_by_id(product_id).one(db).await?;
+    match product {
+        Some(product) => Ok(ProductResponse {
+            id: product.id,
+            name: product.name,
+            description: product.description,
+            price: product.price,
+        }),
+        None => Err(ApiError::NotFound(format!(
+            "Product with ID {} not found",
+            product_id
+        ))),
     };
 
     // Convert the fetched model to ActiveModel for updates
@@ -109,9 +109,7 @@ pub async fn update_product(
     };
 
     // Update the product in the database
-    let updated_product = updated_product
-        .update(db)
-        .await?;
+    let updated_product = updated_product.update(db).await?;
 
     // Return the updated product details
     Ok(ProductResponse {
@@ -124,10 +122,7 @@ pub async fn update_product(
 
 /// Deletes a product by its ID
 /// Deletes a product by its ID
-pub async fn delete_product(
-    db: &DatabaseConnection,
-    product_id: i32,
-) -> Result<(), ApiError> {
+pub async fn delete_product(db: &DatabaseConnection, product_id: i32) -> Result<(), ApiError> {
     // Find the product by its ID
     let product = product::Entity::find_by_id(product_id)
         .one(db)
@@ -135,10 +130,7 @@ pub async fn delete_product(
         .ok_or_else(|| ApiError::NotFound(format!("Product with ID {} not found", product_id)))?;
 
     // Delete the product from the database
-    product
-        .delete(db)
-        .await?;
+    product.delete(db).await?;
 
     Ok(())
 }
-

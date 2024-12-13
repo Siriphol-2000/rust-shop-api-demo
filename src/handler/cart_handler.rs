@@ -15,8 +15,7 @@ async fn create_cart_handler(
     request.validate()?;
 
     // Create cart using the service
-    let cart_response = cart_service::create_cart(db.get_ref(), request.into_inner())
-        .await?;
+    let cart_response = cart_service::create_cart(db.get_ref(), request.into_inner()).await?;
 
     // Return success response
     Ok(HttpResponse::Created().json(ApiResponse::<CartResponse> {
@@ -37,15 +36,16 @@ async fn add_item_to_cart_handler(
 
     // Add item to cart using the service
     let cart_item_response =
-        cart_service::add_item_to_cart(db.get_ref(), *cart_id, request.into_inner())
-            .await?;
+        cart_service::add_item_to_cart(db.get_ref(), *cart_id, request.into_inner()).await?;
 
     // Return success response
-    Ok(HttpResponse::Created().json(ApiResponse::<CartItemResponse> {
-        status: "success".to_string(),
-        message: "Item added to cart successfully".to_string(),
-        data: Some(cart_item_response),
-    }))
+    Ok(
+        HttpResponse::Created().json(ApiResponse::<CartItemResponse> {
+            status: "success".to_string(),
+            message: "Item added to cart successfully".to_string(),
+            data: Some(cart_item_response),
+        }),
+    )
 }
 
 #[delete("/carts/items/{cart_item_id}")]
@@ -54,8 +54,7 @@ async fn remove_item_from_cart_handler(
     cart_item_id: web::Path<i32>,
 ) -> Result<HttpResponse, ApiError> {
     // Remove item from cart using the service
-    cart_service::remove_item_from_cart(db.get_ref(), *cart_item_id)
-        .await?;
+    cart_service::remove_item_from_cart(db.get_ref(), *cart_item_id).await?;
 
     // Return success response
     Ok(HttpResponse::Ok().json(ApiResponse::<String> {
@@ -71,8 +70,7 @@ async fn clear_cart_handler(
     cart_id: web::Path<i32>,
 ) -> Result<HttpResponse, ApiError> {
     // Clear all items from cart using the service
-    cart_service::clear_cart(db.get_ref(), *cart_id)
-        .await?;
+    cart_service::clear_cart(db.get_ref(), *cart_id).await?;
 
     // Return success response
     Ok(HttpResponse::Ok().json(ApiResponse::<String> {
