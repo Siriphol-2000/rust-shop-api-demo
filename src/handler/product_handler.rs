@@ -27,14 +27,10 @@ pub async fn create_product(
     request: web::Json<ProductRequest>,
 ) -> Result<HttpResponse, ApiError> {
     request
-        .validate()
-        .map_err(|e| ApiError::ValidationError(e.to_string()))?;
+        .validate()?;
 
     let product_response = product_service::create_product(db.get_ref(), request.into_inner())
-        .await
-        .map_err(|_| ApiError::DatabaseError {
-            entity: "product".to_string(),
-        })?;
+        .await?;
 
     Ok(HttpResponse::Created().json(ApiResponse {
         status: "success".to_string(),
@@ -46,10 +42,7 @@ pub async fn create_product(
 #[get("/products")]
 pub async fn get_all_products(db: web::Data<DatabaseConnection>) -> Result<HttpResponse, ApiError> {
     let product_responses = product_service::get_all_products(db.get_ref())
-        .await
-        .map_err(|_| ApiError::DatabaseError {
-            entity: "product".to_string(),
-        })?;
+        .await?;
 
     Ok(HttpResponse::Ok().json(ApiResponse {
         status: "success".to_string(),
@@ -64,10 +57,7 @@ pub async fn get_product(
     product_id: web::Path<i32>,
 ) -> Result<HttpResponse, ApiError> {
     let product_response = product_service::get_product_by_id(db.get_ref(), *product_id)
-        .await
-        .map_err(|_| ApiError::NotFound {
-            entity: "product".to_string(),
-        })?;
+        .await?;
 
     Ok(HttpResponse::Ok().json(ApiResponse {
         status: "success".to_string(),
@@ -83,15 +73,11 @@ pub async fn update_product(
     request: web::Json<ProductRequest>,
 ) -> Result<HttpResponse, ApiError> {
     request
-        .validate()
-        .map_err(|e| ApiError::ValidationError(e.to_string()))?;
+        .validate()?;
 
     let product_response =
         product_service::update_product(db.get_ref(), *product_id, request.into_inner())
-            .await
-            .map_err(|_| ApiError::UpdateError {
-                entity: "product".to_string(),
-            })?;
+            .await?;
 
     Ok(HttpResponse::Ok().json(ApiResponse {
         status: "success".to_string(),
@@ -106,10 +92,7 @@ pub async fn delete_product(
     product_id: web::Path<i32>,
 ) -> Result<HttpResponse, ApiError> {
     product_service::delete_product(db.get_ref(), *product_id)
-        .await
-        .map_err(|_| ApiError::DeleteError {
-            entity: "product".to_string(),
-        })?;
+        .await?;
 
     Ok(HttpResponse::Ok().json(ApiResponse::<()> {
         status: "success".to_string(),

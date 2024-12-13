@@ -1,7 +1,7 @@
-use crate::entities::{cart, cart_item};
+use crate::{entities::{cart, cart_item}, utils::actix_error::ApiError};
 use actix_web::{web, HttpResponse, Responder};
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DeleteResult, EntityTrait, QueryFilter, Set};
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
@@ -66,30 +66,23 @@ impl From<crate::entities::cart_item::Model> for CartItemResponse {
     }
 }
 
-// /// Custom validator to check that a quantity is greater than 0.
-// fn validate_quantity(value: &i32) -> Result<(), ValidationError> {
-//     if *value < 1 {
-//         return Err(ValidationError::new("quantity_less_than_one"));
-//     }
-//     Ok(())
-// }
-
 /// Service function to create a new cart
 pub async fn create_cart(
     db: &DatabaseConnection,
     request: CartRequest,
-) -> Result<CartResponse, String> {
+) -> Result<CartResponse, ApiError> {
     // Get the current timestamp
     let now_utc = Utc::now();
     let now_fixed: chrono::DateTime<chrono::FixedOffset> = now_utc.into(); // Convert to FixedOffset
-                                                                           // Validate the input
+
+    // Validate the input
     if let Err(validation_errors) = request.validate() {
-        return Err(format!("Validation failed: {}", validation_errors));
+        return Err(ApiError::ValidationError(format!("Validation failed: {}", validation_errors)));
     }
 
     // Create the cart in the database
     let cart = cart::ActiveModel {
-        user_id: sea_orm::Set(request.user_id),
+        user_id: Set(request.user_id),
         created_at: Set(now_fixed), // Set the created_at timestamp
         updated_at: Set(now_fixed), // Set the updated_at timestamp
         ..Default::default()
@@ -98,7 +91,7 @@ pub async fn create_cart(
     let inserted_cart = cart
         .insert(db)
         .await
-        .map_err(|err| format!("Failed to create cart: {}", err))?;
+        .map_err(|err| ApiError::InternalServerError(format!("Failed to create cart: {}", err)))?;
 
     // Return the response with cart details
     Ok(CartResponse::from(inserted_cart))
@@ -109,20 +102,21 @@ pub async fn add_item_to_cart(
     db: &DatabaseConnection,
     cart_id: i32,
     request: CartItemRequest,
-) -> Result<CartItemResponse, String> {
+) -> Result<CartItemResponse, ApiError> {
     // Get the current timestamp
     let now_utc = Utc::now();
     let now_fixed: chrono::DateTime<chrono::FixedOffset> = now_utc.into(); // Convert to FixedOffset
-                                                                           // Validate the input
+
+    // Validate the input
     if let Err(validation_errors) = request.validate() {
-        return Err(format!("Validation failed: {}", validation_errors));
+        return Err(ApiError::ValidationError(format!("Validation failed: {}", validation_errors)));
     }
 
     // Create the cart item in the database
     let cart_item = cart_item::ActiveModel {
-        cart_id: sea_orm::Set(cart_id),
-        product_id: sea_orm::Set(request.product_id),
-        quantity: sea_orm::Set(request.quantity),
+        cart_id: Set(cart_id),
+        product_id: Set(request.product_id),
+        quantity: Set(request.quantity),
         created_at: Set(now_fixed), // Set the created_at timestamp
         updated_at: Set(now_fixed), // Set the updated_at timestamp
         ..Default::default()
@@ -131,7 +125,7 @@ pub async fn add_item_to_cart(
     let inserted_cart_item = cart_item
         .insert(db)
         .await
-        .map_err(|err| format!("Failed to add item to cart: {}", err))?;
+        .map_err(|err| ApiError::InternalServerError(format!("Failed to add item to cart: {}", err)))?;
 
     // Return the response with cart item details
     Ok(CartItemResponse::from(inserted_cart_item))
@@ -141,25 +135,23 @@ pub async fn add_item_to_cart(
 pub async fn remove_item_from_cart(
     db: &DatabaseConnection,
     cart_item_id: i32,
-) -> Result<(), String> {
+) -> Result<DeleteResult, ApiError> {
     // Attempt to delete the cart item from the database
     cart_item::Entity::delete_many()
         .filter(cart_item::Column::Id.eq(cart_item_id)) // Apply filter to delete specific cart item
         .exec(db)
         .await
-        .map_err(|err| format!("Failed to remove item from cart: {}", err))?;
-
-    Ok(())
+        .map_err(|err| ApiError::InternalServerError(format!("Failed to remove item from cart: {}", err)))
 }
 
 /// Service function to clear all items in a cart
-pub async fn clear_cart(db: &DatabaseConnection, cart_id: i32) -> Result<(), String> {
+pub async fn clear_cart(db: &DatabaseConnection, cart_id: i32) -> Result<(), ApiError> {
     // Attempt to delete all items in the cart
     cart_item::Entity::delete_many() // Use delete_many instead of delete
         .filter(cart_item::Column::CartId.eq(cart_id))
         .exec(db)
         .await
-        .map_err(|err| format!("Failed to clear cart: {}", err))?;
+        .map_err(|err| ApiError::InternalServerError(format!("Failed to clear cart: {}", err)))?;
 
     Ok(())
 }
@@ -196,7 +188,7 @@ async fn remove_item_from_cart_handler(
     cart_item_id: web::Path<i32>,
 ) -> impl Responder {
     match remove_item_from_cart(db.get_ref(), *cart_item_id).await {
-        Ok(()) => HttpResponse::Ok().json("Item removed from cart"),
+        Ok(_) => HttpResponse::Ok().json("Item removed from cart"),
         Err(err) => HttpResponse::BadRequest().json(format!("Error: {}", err)),
     }
 }

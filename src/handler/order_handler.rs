@@ -16,10 +16,7 @@ async fn create_order_handler(
 
     // Fetch all carts for the user
     let carts = OrderService::get_all_carts_for_user(db.get_ref(), user_id)
-        .await
-        .map_err(|_| ApiError::FetchError {
-            entity: "cart".to_string(),
-        })?;
+        .await?;
 
     if carts.is_empty() {
         return Err(ApiError::ValidationError(
@@ -32,10 +29,7 @@ async fn create_order_handler(
     // Collect items from all carts
     for cart in carts {
         let cart_items = OrderService::get_cart_items_for_user(db.get_ref(), cart.id)
-            .await
-            .map_err(|_| ApiError::FetchError {
-                entity: "cart item".to_string(),
-            })?;
+            .await?;
 
         all_cart_items.extend(cart_items);
     }
@@ -50,10 +44,7 @@ async fn create_order_handler(
     let mut order_items = Vec::new();
     for item in all_cart_items {
         let price = OrderService::get_product_price(db.get_ref(), item.product_id)
-            .await
-            .map_err(|_| ApiError::FetchError {
-                entity: "product".to_string(),
-            })?;
+            .await?;
 
         order_items.push(OrderItemRequest {
             product_id: item.product_id,
@@ -75,17 +66,11 @@ async fn create_order_handler(
 
     // Create the order using the service
     let order = OrderService::create_order(db.get_ref(), create_order_request)
-        .await
-        .map_err(|_| ApiError::DatabaseError {
-            entity: "order".to_string(),
-        })?;
+        .await?;
 
     // Clear all carts after the order is created
     OrderService::clear_all_carts(db.get_ref(), user_id)
-        .await
-        .map_err(|_| ApiError::DeleteError {
-            entity: "cart".to_string(),
-        })?;
+        .await?;
 
     Ok(HttpResponse::Created().json(ApiResponse {
         status: "success".to_string(),
@@ -101,10 +86,7 @@ async fn get_order_with_items_handler(
     order_id: web::Path<i32>,
 ) -> Result<HttpResponse, ApiError> {
     let (order, items) = OrderService::get_order_with_items(db.get_ref(), *order_id)
-        .await
-        .map_err(|_| ApiError::FetchError {
-            entity: "order".to_string(),
-        })?;
+        .await?;
 
     Ok(HttpResponse::Ok().json(ApiResponse {
         status: "success".to_string(),
@@ -127,10 +109,7 @@ async fn update_payment_status_handler(
 
     let updated_order =
         OrderService::update_payment_status(db.get_ref(), *order_id, request.into_inner())
-            .await
-            .map_err(|_| ApiError::UpdateError {
-                entity: "order".to_string(),
-            })?;
+            .await?;
 
     Ok(HttpResponse::Ok().json(ApiResponse {
         status: "success".to_string(),
@@ -146,10 +125,7 @@ async fn delete_order_handler(
     order_id: web::Path<i32>,
 ) -> Result<HttpResponse, ApiError> {
     OrderService::delete_order(db.get_ref(), *order_id)
-        .await
-        .map_err(|_| ApiError::DeleteError {
-            entity: "order".to_string(),
-        })?;
+        .await?;
 
     Ok(HttpResponse::Ok().json(ApiResponse::<String> {
         status: "success".to_string(),

@@ -1,5 +1,6 @@
 use crate::entities::product;
 use crate::models::product::{ProductRequest, ProductResponse};
+use crate::utils::actix_error::ApiError;
 use sea_orm::entity::ModelTrait;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 
@@ -8,7 +9,7 @@ use chrono::Utc;
 pub async fn create_product(
     db: &DatabaseConnection,
     request: ProductRequest,
-) -> Result<ProductResponse, String> {
+) -> Result<ProductResponse, ApiError> {
     // Get the current timestamp
     let now_utc = Utc::now();
     let now_fixed: chrono::DateTime<chrono::FixedOffset> = now_utc.into(); // Convert to FixedOffset
@@ -26,8 +27,7 @@ pub async fn create_product(
     // Insert the product into the database
     let result = new_product
         .insert(db)
-        .await
-        .map_err(|_| "Failed to save product")?;
+        .await?;
 
     // Return the response with product details
     Ok(ProductResponse {
@@ -42,26 +42,27 @@ pub async fn create_product(
 pub async fn get_product_by_id(
     db: &DatabaseConnection,
     product_id: i32,
-) -> Result<ProductResponse, String> {
+) -> Result<ProductResponse, ApiError> {
     // Fetch the product by ID
-    match product::Entity::find_by_id(product_id).one(db).await {
-        Ok(Some(product)) => Ok(ProductResponse {
-            id: product.id,
-            name: product.name,
-            description: product.description,
-            price: product.price,
-        }),
-        Ok(None) => Err(format!("Product with ID {} not found", product_id)),
-        Err(err) => Err(format!("Failed to fetch product: {}", err)),
-    }
-}
+let product=product::Entity::find_by_id(product_id).one(db).await?;
+match product {
+    Some(product)=>Ok(ProductResponse{
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+    }),
+    None => Err(ApiError::NotFound(format!("Product with ID {} not found", product_id))),
 
-pub async fn get_all_products(db: &DatabaseConnection) -> Result<Vec<ProductResponse>, String> {
+}
+    
+} 
+
+pub async fn get_all_products(db: &DatabaseConnection) -> Result<Vec<ProductResponse>, ApiError> {
     // Fetch all products
     let products = product::Entity::find()
         .all(db)
-        .await
-        .map_err(|_| "Failed to fetch products")?; // Assuming the error is a string
+        .await?; // Assuming the error is a string
 
     // Convert the Vec<product::Model> to Vec<ProductResponse>
     let product_responses = products
@@ -82,19 +83,24 @@ pub async fn update_product(
     db: &DatabaseConnection,
     product_id: i32,
     request: ProductRequest,
-) -> Result<ProductResponse, String> {
+) -> Result<ProductResponse, ApiError> {
     let now_utc = Utc::now();
     let now_fixed: chrono::DateTime<chrono::FixedOffset> = now_utc.into(); // Convert to FixedOffset
                                                                            // Fetch the existing product by ID
-    let product = match product::Entity::find_by_id(product_id).one(db).await {
-        Ok(Some(product)) => product,
-        Ok(None) => return Err(format!("Product with ID {} not found", product_id)),
-        Err(err) => return Err(format!("Failed to fetch product: {}", err)),
+    let product =  product::Entity::find_by_id(product_id).one(db).await?;
+      match product {
+    Some(product) => Ok(ProductResponse{
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+    }),
+    None => Err(ApiError::NotFound(format!("Product with ID {} not found", product_id))),
     };
 
     // Convert the fetched model to ActiveModel for updates
     let updated_product = product::ActiveModel {
-        id: Set(product.id), // Setting the ID so that we can update the record
+        id: Set(product_id), // Setting the ID so that we can update the record
         name: Set(request.name),
         description: Set(request.description),
         price: Set(request.price),
@@ -105,8 +111,7 @@ pub async fn update_product(
     // Update the product in the database
     let updated_product = updated_product
         .update(db)
-        .await
-        .map_err(|_| "Failed to update product")?;
+        .await?;
 
     // Return the updated product details
     Ok(ProductResponse {
@@ -118,26 +123,22 @@ pub async fn update_product(
 }
 
 /// Deletes a product by its ID
-pub async fn delete_product(db: &DatabaseConnection, product_id: i32) -> Result<(), String> {
+/// Deletes a product by its ID
+pub async fn delete_product(
+    db: &DatabaseConnection,
+    product_id: i32,
+) -> Result<(), ApiError> {
     // Find the product by its ID
-    let product: Option<product::Model> = product::Entity::find_by_id(product_id)
+    let product = product::Entity::find_by_id(product_id)
         .one(db)
-        .await
-        .map_err(|_| "Failed to find product")?;
+        .await?
+        .ok_or_else(|| ApiError::NotFound(format!("Product with ID {} not found", product_id)))?;
 
-    // Check if the product exists
-    let product = product.ok_or("Product not found")?;
-
-    // Delete the product
-    let delete_result = product
+    // Delete the product from the database
+    product
         .delete(db)
-        .await
-        .map_err(|_| "Failed to delete product")?;
-
-    // Ensure that one row was affected
-    if delete_result.rows_affected == 0 {
-        return Err("No rows were affected, product might not exist".to_string());
-    }
+        .await?;
 
     Ok(())
 }
+

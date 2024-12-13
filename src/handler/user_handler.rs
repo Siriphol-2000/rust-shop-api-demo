@@ -12,15 +12,10 @@ async fn register(
     request: web::Json<UserRegisterRequest>,
 ) -> Result<HttpResponse, ApiError> {
     request
-        .validate()
-        .map_err(|e| ApiError::ValidationError(e.to_string()))?;
+        .validate()?;
 
     let user_response = user_service::register_user(db.get_ref(), request.into_inner())
-        .await
-        .map_err(|_| ApiError::DatabaseError {
-            entity: "user".to_string(),
-        })?;
-
+        .await?;
     Ok(HttpResponse::Created().json(ApiResponse {
         status: "success".to_string(),
         message: "registration successfully".to_string(),
@@ -34,10 +29,7 @@ async fn get_user(
     user_id: web::Path<i32>, // Extract `id` from the URL
 ) -> Result<HttpResponse, ApiError> {
     let user_response = user_service::get_user_by_id(db.get_ref(), *user_id)
-        .await
-        .map_err(|_| ApiError::NotFound {
-            entity: "user".to_string(),
-        })?;
+        .await?;
     Ok(HttpResponse::Ok().json(ApiResponse {
         status: "success".to_string(),
         message: "Product fetched successfully".to_string(),
@@ -52,15 +44,11 @@ async fn login(
 ) -> Result<HttpResponse, ApiError> {
     // Validate the input
     request
-        .validate()
-        .map_err(|e| ApiError::ValidationError(e.to_string()))?;
+        .validate()?;
 
     let user_response =
         user_service::authenticate_user(db.get_ref(), &request.email, &request.password)
-            .await
-            .map_err(|_| ApiError::DatabaseError {
-                entity: "user".to_string(),
-            })?;
+            .await?;
 
     Ok(HttpResponse::Created().json(ApiResponse {
         status: "success".to_string(),

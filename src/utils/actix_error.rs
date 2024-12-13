@@ -1,65 +1,109 @@
-use actix_web::http::StatusCode;
-use actix_web::{HttpResponse, ResponseError};
+use actix_web::{error, http::StatusCode, HttpResponse};
+use derive_more::{Display, From};
+use sea_orm::DbErr;
 use serde::Serialize;
-use thiserror::Error;
+use validator::ValidationErrors;
 
-#[derive(Debug, Error, Serialize)]
+use crate::services::service_error::ServiceError;
+
+#[derive(Debug, Display)]
 pub enum ApiError {
-    #[error("Validation failed: {0}")]
+    DatabaseError(String),
+    NotFound(String),
+    AuthenticationError(String),
+    InternalServerError(String),
+    // Manually handle ValidationError, do not derive From for String
     ValidationError(String),
-    #[error("{entity} not found")]
-    NotFound { entity: String },
-    #[error("Failed to fetch {entity}")]
-    FetchError { entity: String },
-    #[error("Failed to create {entity}")]
-    DatabaseError { entity: String },
-    #[error("Failed to update {entity}")]
-    UpdateError { entity: String },
-    #[error("Failed to delete {entity}")]
-    DeleteError { entity: String },
 }
 
-impl ApiError {
-    fn status_code(&self) -> StatusCode {
-        match self {
-            ApiError::ValidationError(_) => StatusCode::BAD_REQUEST,
-            ApiError::NotFound { .. } => StatusCode::NOT_FOUND,
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
-        }
-    }
-
-    fn error_message(&self) -> String {
-        match self {
-            ApiError::ValidationError(msg) => msg.clone(),
-            ApiError::NotFound { entity } => format!("{} not found", entity),
-            ApiError::FetchError { entity } => format!("Failed to fetch {}", entity),
-            ApiError::DatabaseError { entity } => format!("Failed to create {}", entity),
-            ApiError::UpdateError { entity } => format!("Failed to update {}", entity),
-            ApiError::DeleteError { entity } => format!("Failed to delete {}", entity),
+// Implement From<DbErr> for ApiError
+impl From<DbErr> for ApiError {
+    fn from(err: DbErr) -> Self {
+        match err {
+            DbErr::RecordNotFound(msg) => ApiError::NotFound(msg),
+            _ => ApiError::DatabaseError(err.to_string()),
         }
     }
 }
 
-impl ResponseError for ApiError {
+// Implement From<ServiceError> for ApiError
+impl From<ServiceError> for ApiError {
+    fn from(err: ServiceError) -> Self {
+        match err {
+            ServiceError::Database(e) => ApiError::DatabaseError(e.to_string()),
+            _ => ApiError::NotFound("".into()),
+        }
+    }
+}
+
+// Manually implement From<ValidationErrors> for ApiError
+impl From<ValidationErrors> for ApiError {
+    fn from(err: ValidationErrors) -> Self {
+        // Create a string representation of the validation errors
+        let error_string = err
+            .field_errors()
+            .into_iter()
+            .map(|(field, errors)| {
+                format!(
+                    "Field '{}': {}",
+                    field,
+                    errors
+                        .iter()
+                        .map(|e| e.message.clone().unwrap_or_else(|| "Unknown error".into()).to_string()) // Convert Cow to String
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                )
+            })
+            .collect::<Vec<String>>()
+            .join("; ");
+
+        // Return the ApiError with the generated string
+        ApiError::ValidationError(error_string)
+    }
+}
+
+// Implement the ResponseError trait for ApiError
+impl error::ResponseError for ApiError {
     fn error_response(&self) -> HttpResponse {
-        let status = self.status_code();
-        let message = self.error_message();
+        let error_response = match self {
+            ApiError::DatabaseError(msg) => ErrorResponse {
+                error: "Database error".to_string(),
+                message: msg.clone(),
+            },
+            ApiError::ValidationError(msg) => ErrorResponse {
+                error: "Validation error".to_string(),
+                message: msg.clone(),
+            },
+            ApiError::NotFound(msg) => ErrorResponse {
+                error: "Not found".to_string(),
+                message: msg.clone(),
+            },
+            ApiError::AuthenticationError(msg) => ErrorResponse {
+                error: "Authentication error".to_string(),
+                message: msg.clone(),
+            },
+            ApiError::InternalServerError(_) => ErrorResponse {
+                error: "Internal server error".to_string(),
+                message: "An unexpected error occurred".to_string(),
+            },
+        };
 
-        HttpResponse::build(status).json(ErrorResponse {
-            status: "error".to_string(),
-            message,
-            error: Some(self.to_string()),
-        })
+        HttpResponse::build(self.status_code()).json(error_response)
     }
 
     fn status_code(&self) -> StatusCode {
-        self.status_code()
+        match self {
+            ApiError::DatabaseError(_) => StatusCode::BAD_REQUEST,
+            ApiError::ValidationError(_) => StatusCode::BAD_REQUEST,
+            ApiError::NotFound(_) => StatusCode::NOT_FOUND,
+            ApiError::AuthenticationError(_) => StatusCode::UNAUTHORIZED,
+            ApiError::InternalServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        }
     }
 }
 
 #[derive(Serialize)]
-pub struct ErrorResponse {
-    pub status: String,
-    pub message: String,
-    pub error: Option<String>,
+struct ErrorResponse {
+    error: String,
+    message: String,
 }

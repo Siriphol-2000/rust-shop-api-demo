@@ -1,5 +1,6 @@
 use super::cart_service::{CartItemResponse, CartResponse};
 use crate::entities::{cart, cart_item, order, order_item};
+use crate::utils::actix_error::ApiError;
 use crate::utils::prompt_pay::PromptPayUtils; // Import the PromptPay utility
 use chrono::Utc;
 use dotenvy::dotenv;
@@ -172,8 +173,7 @@ impl OrderService {
         transaction.commit().await?;
         dotenv().ok();
         // Generate PromptPay QR Code after successful order creation
-        let phone_number: String =
-            env::var("My_PHONE_NUMBER").expect("My_PHONE_NUMBER not set");
+        let phone_number: String = env::var("My_PHONE_NUMBER").expect("My_PHONE_NUMBER not set");
         let qr_code_path = format!("qrcodes/order_{}_qr.png", new_order.id);
 
         match PromptPayUtils::generate_qr(
@@ -290,12 +290,11 @@ impl OrderService {
     pub async fn get_all_carts_for_user(
         db: &DatabaseConnection,
         user_id: i32,
-    ) -> Result<Vec<CartResponse>, String> {
+    ) -> Result<Vec<CartResponse>, ApiError> {
         let carts = cart::Entity::find()
             .filter(cart::Column::UserId.eq(user_id)) // Fetch all carts for the user
             .all(db)
-            .await
-            .map_err(|err| format!("Failed to fetch carts: {}", err))?;
+            .await?;
 
         // Convert the result into the desired response format
         Ok(carts.into_iter().map(CartResponse::from).collect())
@@ -304,34 +303,31 @@ impl OrderService {
     pub async fn get_cart_items_for_user(
         db: &DatabaseConnection,
         cart_id: i32,
-    ) -> Result<Vec<CartItemResponse>, String> {
+    ) -> Result<Vec<CartItemResponse>, ApiError> {
         let cart_items = cart_item::Entity::find()
             .filter(cart_item::Column::CartId.eq(cart_id)) // Fetch all items in a specific cart
             .all(db)
-            .await
-            .map_err(|err| format!("Failed to fetch cart items: {}", err))?;
+            .await?;
 
         // Convert the result into the desired response format
         Ok(cart_items.into_iter().map(CartItemResponse::from).collect())
     }
 
     // Service function to clear all carts for a user
-    pub async fn clear_all_carts(db: &DatabaseConnection, user_id: i32) -> Result<(), String> {
+    pub async fn clear_all_carts(db: &DatabaseConnection, user_id: i32) -> Result<(), ApiError> {
         use crate::entities::{cart, cart_item};
         use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, TransactionTrait};
 
         // Start a transaction to ensure atomicity
         let txn = db
             .begin()
-            .await
-            .map_err(|err| format!("Failed to begin transaction: {}", err))?;
+            .await?;
 
         // Fetch all cart IDs for the user
         let cart_ids: Vec<i32> = cart::Entity::find()
             .filter(cart::Column::UserId.eq(user_id))
             .all(&txn)
-            .await
-            .map_err(|err| format!("Failed to fetch carts for user: {}", err))?
+            .await?
             .into_iter()
             .map(|cart| cart.id)
             .collect();
@@ -344,37 +340,35 @@ impl OrderService {
         cart_item::Entity::delete_many()
             .filter(cart_item::Column::CartId.is_in(cart_ids.clone()))
             .exec(&txn)
-            .await
-            .map_err(|err| format!("Failed to delete cart items: {}", err))?;
+            .await?;
 
         // Delete all carts for the user
         cart::Entity::delete_many()
             .filter(cart::Column::UserId.eq(user_id))
             .exec(&txn)
-            .await
-            .map_err(|err| format!("Failed to delete carts: {}", err))?;
+            .await?;
 
         // Commit the transaction
         txn.commit()
-            .await
-            .map_err(|err| format!("Failed to commit transaction: {}", err))?;
+            .await?;
 
         Ok(())
     }
+/// Fetch price for a given product ID
+pub async fn get_product_price(
+    db: &DatabaseConnection,
+    product_id: i32,
+) -> Result<Decimal, ApiError> {
+    use crate::entities::product;
 
-    /// Fetch price for a given product ID
-    pub async fn get_product_price(
-        db: &DatabaseConnection,
-        product_id: i32,
-    ) -> Result<Decimal, String> {
-        use crate::entities::product;
+    // Fetch the product by its ID
+    let product = product::Entity::find_by_id(product_id)
+        .one(db)
+        .await?
+        .ok_or_else(|| ApiError::NotFound(format!("Product with ID {} not found", product_id)))?;
 
-        let product = product::Entity::find_by_id(product_id)
-            .one(db)
-            .await
-            .map_err(|err| format!("Failed to fetch product: {}", err))?
-            .ok_or_else(|| format!("Product with ID {} not found", product_id))?;
+    // Return the product's price
+    Ok(product.price)
+}
 
-        Ok(product.price) // Assuming `price` is a field in the `product` table
-    }
 }
